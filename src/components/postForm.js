@@ -5,6 +5,7 @@ export default function PostForm({posts, setPosts, editingPost, setEditingPost})
 
     const [title, setTitle] = useState('');
     const [body, setBody] = useState('');
+    const [error, setError] = useState('');
 
     useEffect(() => {
         if (editingPost) {
@@ -14,40 +15,56 @@ export default function PostForm({posts, setPosts, editingPost, setEditingPost})
             setTitle('');
             setBody('');
         }
+        setError('');
     }, [editingPost]);
 
+    const resetForm = () => {
+        setTitle('');
+        setBody('');
+        setEditingPost(null);
+    };
+
     const editPost = () => {
-        updatePost(editingPost.id, {title, body}).then((response) => {
+        if(editingPost.isLocal) {
             const updatedPosts = posts.map((post) =>
-                post.id === editingPost.id ? response.data : post
+                post.id === editingPost.id ? { ...post, title, body } : post
             );
             setPosts(updatedPosts);
-        })
-        .catch((error) => {    
-            console.error("Error updating post:", error);
-        });
+            resetForm();
+        } else {
+            updatePost(editingPost.id, {title, body}).then((response) => {
+                const updatedPosts = posts.map((post) =>
+                    post.id === editingPost.id ? {...post, ...response.data} : post
+                );
+                setPosts(updatedPosts);
+                resetForm();
+            })
+            .catch((error) => {    
+                console.error("Error updating post:", error);
+                setError("Couldn't update the post. Please try again.");
+            });
+        }
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        setError('');
         // Handle form submission logic here
         if(editingPost) {
             editPost();
         } else {
             handleAddPost();
         }
-
-        setTitle('');
-        setBody('');
-        setEditingPost(null);
     };
 
     const handleAddPost = () => {
          createPost({title, body}).then((response) => {
-            setPosts([...posts, response.data]);
+            setPosts([{...response.data, id: Date.now(), isLocal: true}, ...posts]); // Add a unique id for the new post, shown at the top
+            resetForm();
         })
-        .catch((error) => {    
-            console.error("Error fetching posts:", error);
+        .catch((error) => {
+            console.error("Error creating post:", error);
+            setError("Couldn't create the post. Please try again.");
         });
     }
 
@@ -79,6 +96,7 @@ export default function PostForm({posts, setPosts, editingPost, setEditingPost})
             value={body}
             onChange={(e) => setBody(e.target.value)}
         />
+        {error && <p className="form-error" role="alert">{error}</p>}
         <div className="panel__actions">
             <button className="btn btn--primary" type="submit" >{editingPost ? 'Update Post' : 'Add Post'}</button>
         </div>

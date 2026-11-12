@@ -187,6 +187,16 @@ body {
   line-height: 1.5;
 }
 
+.form-error {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--danger);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+}
+
 .panel__actions {
   display: flex;
   justify-content: flex-end;
