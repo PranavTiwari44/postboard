@@ -27,7 +27,7 @@ A small React app for creating, reading, updating and deleting posts. It talks t
 ### Install and run
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/PranavTiwari44/postboard.git
 cd postboard
 npm install
 npm start

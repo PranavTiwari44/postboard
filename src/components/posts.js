@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { getPosts, deletePost, updatePost } from '../Services/postService';
+import { getPosts, deletePost } from '../Services/postService';
 import PostForm from './postForm';
 
 export default function Posts() {
     const [posts, setPosts] = useState([]);
     const [editingPost, setEditingPost] = useState(null);
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(true);
     
     useEffect(() => {
         getPosts().then((response) => {
@@ -12,16 +14,24 @@ export default function Posts() {
         })
         .catch((error) => {    
             console.error("Error fetching posts:", error);
-        });
+            setError("Couldn't fetch the posts. Please try again.");
+        })
+        .finally(() => setLoading(false));
     }, []);
 
-    const handleDelete = (postId) => { 
-         deletePost(postId).then(() => {
-            setPosts(posts.filter((post) => post.id !== postId));
-        })
-        .catch((error) => {    
-            console.error("Error fetching posts:", error);
-        });
+    const handleDelete = (post) => { 
+        setError('');
+        if (post.isLocal) {
+            setPosts(posts.filter((p) => p.id !== post.id));
+        } else {
+            deletePost(post.id).then(() => {
+                setPosts(posts.filter((p) => p.id !== post.id));
+            })
+            .catch((error) => {    
+                console.error("Error deleting posts:", error);
+                setError("Couldn't delete the post. Please try again.");
+            });
+        }
     };
 
     const startEditing = (post) => {
@@ -37,7 +47,10 @@ export default function Posts() {
                     All Posts <span className="badge" aria-label={`${posts.length} posts`}>{posts.length}</span>
                 </h2>
             </div>
-            {posts.length === 0 && (
+            {error && <p className="form-error" role="alert">{error}</p>}
+            {loading ? (
+                <p className="empty">Loading posts...</p>
+            ) : !error && posts.length === 0 && (
                 <div className="empty">
                     <p className="empty__title">No posts yet</p>
                     <p className="empty__text">Use the form to write your first post.</p>
@@ -48,14 +61,14 @@ export default function Posts() {
                     <li key={post.id}>
                         <article className="card" aria-labelledby={`post-title-${post.id}`}>
                             <header className="card__meta">
-                                <span className="avatar" title={`User ${post.userId}`} aria-hidden="true">U{post.userId}</span>
+                                <span className="avatar" title={post.userId ? `User ${post.userId}` : "Me" } aria-hidden="true">{post.userId ? `U${post.userId}` : "Me"}</span>
                                 <span className="card__id">#{post.id}</span>
                             </header>
                             <h3 id={`post-title-${post.id}`} className="card__title">{post.title}</h3>
                             <p className="card__body">{post.body}</p>
                             <footer className="card__actions">
                                 <button type="button" className="btn btn--ghost btn--sm" aria-label={`Edit post: ${post.title}`} onClick={() => startEditing(post)}>Edit</button>
-                                <button type="button" className="btn btn--danger btn--sm" aria-label={`Delete post: ${post.title}`} onClick={() => handleDelete(post.id)}>Delete</button>
+                                <button type="button" className="btn btn--danger btn--sm" aria-label={`Delete post: ${post.title}`} onClick={() => handleDelete(post)}>Delete</button>
                             </footer>
                         </article>
                     </li>
